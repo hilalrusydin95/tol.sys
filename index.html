@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistem Tol — Gerbang Digital</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f0e;
+    --surface: #141716;
+    --surface2: #1c1f1d;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --accent: #b8ff4a;
+    --accent-dim: rgba(184,255,74,0.12);
+    --accent-text: #0d0f0e;
+    --text: #f0f0ee;
+    --text2: #8a9089;
+    --text3: #556054;
+    --danger: #ff5c5c;
+    --danger-bg: rgba(255,92,92,0.1);
+    --success: #b8ff4a;
+    --success-bg: rgba(184,255,74,0.1);
+    --warning: #ffb84a;
+    --warning-bg: rgba(255,184,74,0.1);
+    --radius: 10px;
+    --radius-lg: 16px;
+    --mono: 'DM Mono', monospace;
+    --display: 'Syne', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* TOPBAR */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 2rem; height: 56px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .topbar-brand {
+    font-family: var(--display); font-weight: 800; font-size: 16px; letter-spacing: -0.02em;
+    color: var(--text);
+  }
+  .topbar-brand span { color: var(--accent); }
+  .topbar-status {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--text2);
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+  .dot.off { background: var(--text3); }
+
+  /* LAYOUT */
+  .layout { display: flex; height: calc(100vh - 56px); }
+  .sidebar {
+    width: 220px; flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    padding: 1.5rem 0;
+  }
+  .sidebar-section { padding: 0 1rem; margin-bottom: 1.5rem; }
+  .sidebar-label { font-size: 10px; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; padding: 0 0.5rem; margin-bottom: 6px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: var(--radius);
+    cursor: pointer; color: var(--text2); font-size: 13px;
+    transition: all 0.15s;
+  }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: var(--accent-dim); color: var(--accent); }
+  .nav-icon { width: 16px; height: 16px; flex-shrink: 0; }
+
+  /* MAIN */
+  .main { flex: 1; overflow-y: auto; padding: 2rem; }
+  .screen { display: none; animation: fadeIn 0.2s ease; }
+  .screen.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  .page-title {
+    font-family: var(--display); font-weight: 700; font-size: 26px;
+    letter-spacing: -0.03em; color: var(--text); margin-bottom: 4px;
+  }
+  .page-sub { font-size: 13px; color: var(--text2); margin-bottom: 2rem; }
+
+  /* CARDS */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .card-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+
+  /* GRID */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+
+  /* STAT CARD */
+  .stat { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; }
+  .stat-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 6px; }
+  .stat-value { font-family: var(--display); font-weight: 700; font-size: 28px; color: var(--text); letter-spacing: -0.02em; }
+  .stat-value.accent { color: var(--accent); }
+
+  /* INPUTS */
+  input[type="text"], input[type="number"] {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: var(--radius); color: var(--text); font-family: var(--mono);
+    font-size: 14px; padding: 10px 14px; outline: none; transition: border-color 0.15s;
+  }
+  input:focus { border-color: var(--accent); }
+  input::placeholder { color: var(--text3); }
+
+  .input-group { margin-bottom: 1rem; }
+  .input-group label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 6px; letter-spacing: 0.04em; }
+  .input-prefix { position: relative; }
+  .input-prefix span { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text3); font-size: 13px; pointer-events: none; }
+  .input-prefix input { padding-left: 42px; }
+
+  /* BUTTONS */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 10px 20px; border-radius: var(--radius); font-family: var(--mono);
+    font-size: 13px; cursor: pointer; border: none; transition: all 0.15s; font-weight: 500;
+  }
+  .btn-primary { background: var(--accent); color: var(--accent-text); }
+  .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+  .btn-ghost { background: transparent; color: var(--text2); border: 1px solid var(--border2); }
+  .btn-ghost:hover { background: var(--surface2); color: var(--text); }
+  .btn-full { width: 100%; }
+
+  /* GOLONGAN SELECTOR */
+  .gol-option {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); cursor: pointer; transition: all 0.15s; margin-bottom: 8px;
+  }
+  .gol-option:hover { border-color: var(--border2); background: #1e221f; }
+  .gol-option.selected { border-color: var(--accent); background: var(--accent-dim); }
+  .gol-left { display: flex; flex-direction: column; gap: 3px; }
+  .gol-name { font-size: 14px; color: var(--text); }
+  .gol-price { display: flex; gap: 10px; align-items: center; font-size: 12px; }
+  .gol-original { color: var(--text3); text-decoration: line-through; }
+  .gol-final { color: var(--accent); font-weight: 500; }
+  .gol-badge {
+    font-size: 10px; padding: 3px 10px; border-radius: 20px;
+    background: var(--success-bg); color: var(--accent); font-weight: 500; letter-spacing: 0.04em;
+  }
+  .gol-badge.amber { background: var(--warning-bg); color: var(--warning); }
+  .gol-badge.coral { background: rgba(255,120,80,0.1); color: #ff9966; }
+
+  /* PAYMENT SUMMARY */
+  .pay-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .pay-row:last-child { border-bottom: none; }
+  .pay-row .k { color: var(--text2); }
+  .pay-row .v { color: var(--text); font-weight: 500; }
+  .pay-row .v.strike { text-decoration: line-through; color: var(--text3); font-weight: 400; }
+  .pay-row .v.green { color: var(--accent); }
+  .pay-row .v.big { font-family: var(--display); font-size: 18px; font-weight: 700; }
+  .pay-row .v.red { color: var(--danger); }
+
+  /* ALERT */
+  .alert { padding: 10px 14px; border-radius: var(--radius); font-size: 13px; margin: 8px 0; }
+  .alert-danger { background: var(--danger-bg); color: var(--danger); border: 1px solid rgba(255,92,92,0.2); }
+  .alert-success { background: var(--success-bg); color: var(--accent); border: 1px solid rgba(184,255,74,0.2); }
+
+  /* STRUK */
+  .struk {
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: var(--radius-lg); padding: 1.5rem; font-family: var(--mono);
+    max-width: 360px; margin: 0 auto;
+  }
+  .struk-header { text-align: center; margin-bottom: 16px; }
+  .struk-logo { font-family: var(--display); font-weight: 800; font-size: 18px; letter-spacing: -0.02em; color: var(--accent); }
+  .struk-sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
+  .struk-divider { border: none; border-top: 1px dashed var(--border2); margin: 12px 0; }
+  .struk-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; }
+  .struk-row .k { color: var(--text2); }
+  .struk-total { display: flex; justify-content: space-between; padding: 10px 0; font-family: var(--display); font-weight: 700; font-size: 18px; color: var(--text); }
+  .struk-footer { text-align: center; margin-top: 14px; font-size: 11px; color: var(--text3); letter-spacing: 0.06em; }
+
+  /* LOG TABLE */
+  .log-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 6px;
+  }
+  .log-type { font-size: 13px; color: var(--text); }
+  .log-meta { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .log-amount { font-family: var(--display); font-weight: 700; font-size: 15px; color: var(--accent); }
+  .empty { text-align: center; padding: 3rem; color: var(--text3); font-size: 13px; }
+
+  /* GATE PILL */
+  .gate-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 100px; padding: 6px 14px 6px 10px;
+    font-size: 12px; color: var(--text2); margin-bottom: 1.5rem;
+  }
+  .gate-pill .dot { width: 6px; height: 6px; }
+
+  /* SETUP SCREEN */
+  .setup-wrap { max-width: 420px; margin: 6rem auto; text-align: center; }
+  .setup-icon {
+    width: 64px; height: 64px; border-radius: 16px; background: var(--accent-dim);
+    border: 1px solid rgba(184,255,74,0.25); margin: 0 auto 1.5rem;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .setup-title { font-family: var(--display); font-weight: 800; font-size: 28px; letter-spacing: -0.03em; margin-bottom: 8px; }
+  .setup-desc { color: var(--text2); font-size: 13px; margin-bottom: 2rem; }
+
+  /* DIVIDER */
+  .hr { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
+
+  /* MOBILE */
+  @media (max-width: 600px) {
+    .sidebar { display: none; }
+    .main { padding: 1.25rem; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-brand">TOL<span>.</span>SYS</div>
+  <div class="topbar-status">
+    <div class="dot off" id="status-dot"></div>
+    <span id="status-text">Belum aktif</span>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Operasi</div>
+      <div class="nav-item" onclick="nav('kendaraan')" id="nav-kendaraan">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="1" y="5" width="14" height="8" rx="2" stroke="currentColor" stroke-width="1.2"/><path d="M4 5V4a2 2 0 014 0v1" stroke="currentColor" stroke-width="1.2"/><circle cx="4.5" cy="10.5" r="1" fill="currentColor"/><circle cx="11.5" cy="10.5" r="1" fill="currentColor"/></svg>
+        Masuk kendaraan
+      </div>
+      <div class="nav-item" onclick="nav('laporan')" id="nav-laporan">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.2"/><path d="M5 10V8M8 10V6M11 10V4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        Laporan
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Sistem</div>
+      <div class="nav-item" onclick="nav('setup')" id="nav-setup">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.2"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.42 1.42M11.53 11.53l1.42 1.42M3.05 12.95l1.42-1.42M11.53 4.47l1.42-1.42" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        Pengaturan
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- SETUP SCREEN -->
+    <div id="screen-setup" class="screen active">
+      <div class="setup-wrap">
+        <div class="setup-icon">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect x="4" y="10" width="20" height="14" rx="3" stroke="#b8ff4a" stroke-width="1.5"/><path d="M10 10V8a4 4 0 018 0v2" stroke="#b8ff4a" stroke-width="1.5"/></svg>
+        </div>
+        <div class="setup-title">Mulai sesi operasional</div>
+        <div class="setup-desc">Masukkan nama gerbang tol untuk mengaktifkan sistem pembayaran.</div>
+        <div class="input-group" style="text-align:left">
+          <label>Nama gerbang</label>
+          <input type="text" id="gate-input" placeholder="cth. Gerbang Utama Selatan" />
+        </div>
+        <button class="btn btn-primary btn-full" onclick="startGate()">Aktifkan gerbang →</button>
+      </div>
+    </div>
+
+    <!-- KENDARAAN SCREEN -->
+    <div id="screen-kendaraan" class="screen">
+      <div class="page-title">Masuk kendaraan</div>
+      <div class="page-sub">Pilih golongan lalu proses pembayaran.</div>
+      <div id="gate-pill-k" class="gate-pill"><div class="dot"></div><span id="gate-name-k"></span></div>
+
+      <div class="grid-2" style="gap:1.5rem; align-items:start;">
+        <!-- Kiri: pilih golongan -->
+        <div>
+          <div class="card-label">01 — Pilih golongan kendaraan</div>
+          <div id="gol-list"></div>
+          <button class="btn btn-primary btn-full" id="btn-lanjut" disabled onclick="showPayment()">Lanjut ke pembayaran →</button>
+        </div>
+
+        <!-- Kanan: pembayaran -->
+        <div id="payment-panel" style="display:none">
+          <div class="card-label">02 — Pembayaran</div>
+          <div class="card" id="pay-summary"></div>
+          <div class="input-group" style="margin-top:1rem">
+            <label>Jumlah uang / saldo</label>
+            <div class="input-prefix">
+              <span>Rp</span>
+              <input type="number" id="saldo-input" placeholder="0" oninput="validatePay()" />
+            </div>
+          </div>
+          <div id="pay-alert"></div>
+          <button class="btn btn-primary btn-full" id="btn-bayar" disabled onclick="processPayment()">Bayar sekarang</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STRUK SCREEN -->
+    <div id="screen-struk" class="screen">
+      <div class="page-title">Pembayaran berhasil</div>
+      <div class="page-sub">Struk transaksi dicetak otomatis.</div>
+      <div id="struk-box"></div>
+      <div style="display:flex;gap:10px;margin-top:1.5rem;max-width:360px;margin-left:auto;margin-right:auto;">
+        <button class="btn btn-primary" style="flex:1" onclick="nextKendaraan()">Kendaraan berikutnya →</button>
+        <button class="btn btn-ghost" onclick="nav('laporan')">Lihat laporan</button>
+      </div>
+    </div>
+
+    <!-- LAPORAN SCREEN -->
+    <div id="screen-laporan" class="screen">
+      <div class="page-title">Laporan pendapatan</div>
+      <div class="page-sub" id="laporan-gate-name">Rekap transaksi sesi ini.</div>
+      <div class="grid-3" style="margin-bottom:1.5rem;" id="stat-grid"></div>
+      <div class="card-label">Riwayat transaksi</div>
+      <div id="log-list"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const tarif = {
+  "1": { tipe: "Mobil pribadi / sedan", harga: 50000, diskon: 0.50, badge: "Diskon 50%", badgeClass: "" },
+  "2": { tipe: "Bus / truk kecil",       harga: 100000, diskon: 0.30, badge: "Diskon 30%", badgeClass: "amber" },
+  "3": { tipe: "Truk besar / gandar",    harga: 150000, diskon: 0.25, badge: "Diskon 25%", badgeClass: "coral" }
+};
+
+let gateName = "";
+let selectedGol = null;
+let logTransaksi = [];
+
+function fmt(n) { return "Rp " + n.toLocaleString("id-ID"); }
+function nowStr() { return new Date().toLocaleString("id-ID", { day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" }); }
+
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+function setNavActive(id) {
+  document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+  const el = document.getElementById("nav-" + id);
+  if (el) el.classList.add("active");
+}
+
+function nav(id) {
+  if (id !== "setup" && !gateName) { nav("setup"); return; }
+  setNavActive(id);
+  if (id === "laporan") renderLaporan();
+  showScreen("screen-" + id);
+}
+
+function startGate() {
+  const val = document.getElementById("gate-input").value.trim();
+  if (!val) return;
+  gateName = val;
+  document.getElementById("status-dot").classList.remove("off");
+  document.getElementById("status-text").textContent = gateName.toUpperCase();
+  document.getElementById("gate-name-k").textContent = gateName.toUpperCase();
+  renderGolList();
+  setNavActive("kendaraan");
+  showScreen("screen-kendaraan");
+}
+
+function renderGolList() {
+  const list = document.getElementById("gol-list");
+  list.innerHTML = "";
+  for (const [k, v] of Object.entries(tarif)) {
+    const akhir = v.harga - Math.round(v.harga * v.diskon);
+    const div = document.createElement("div");
+    div.className = "gol-option";
+    div.dataset.gol = k;
+    div.innerHTML = `
+      <div class="gol-left">
+        <span class="gol-name">${v.tipe}</span>
+        <div class="gol-price">
+          <span class="gol-original">${fmt(v.harga)}</span>
+          <span class="gol-final">${fmt(akhir)}</span>
+        </div>
+      </div>
+      <span class="gol-badge ${v.badgeClass}">${v.badge}</span>
+    `;
+    div.onclick = () => selectGol(k, div);
+    list.appendChild(div);
+  }
+}
+
+function selectGol(k, el) {
+  document.querySelectorAll(".gol-option").forEach(c => c.classList.remove("selected"));
+  el.classList.add("selected");
+  selectedGol = k;
+  document.getElementById("btn-lanjut").disabled = false;
+}
+
+function showPayment() {
+  if (!selectedGol) return;
+  const v = tarif[selectedGol];
+  const pot = Math.round(v.harga * v.diskon);
+  const akhir = v.harga - pot;
+  document.getElementById("pay-summary").innerHTML = `
+    <div class="pay-row"><span class="k">Golongan</span><span class="v">${v.tipe}</span></div>
+    <div class="pay-row"><span class="k">Harga normal</span><span class="v strike">${fmt(v.harga)}</span></div>
+    <div class="pay-row"><span class="k">Diskon ${Math.round(v.diskon*100)}%</span><span class="v green">− ${fmt(pot)}</span></div>
+    <div class="pay-row"><span class="k">Total bayar</span><span class="v big">${fmt(akhir)}</span></div>
+  `;
+  document.getElementById("saldo-input").value = "";
+  document.getElementById("pay-alert").innerHTML = "";
+  document.getElementById("btn-bayar").disabled = true;
+  document.getElementById("payment-panel").style.display = "block";
+}
+
+function validatePay() {
+  const v = tarif[selectedGol];
+  const akhir = v.harga - Math.round(v.harga * v.diskon);
+  const saldo = parseInt(document.getElementById("saldo-input").value) || 0;
+  const alertEl = document.getElementById("pay-alert");
+  if (saldo > 0 && saldo < akhir) {
+    alertEl.innerHTML = `<div class="alert alert-danger">⚠ Saldo kurang ${fmt(akhir - saldo)}</div>`;
+    document.getElementById("btn-bayar").disabled = true;
+  } else if (saldo >= akhir) {
+    alertEl.innerHTML = `<div class="alert alert-success">✓ Kembalian: ${fmt(saldo - akhir)}</div>`;
+    document.getElementById("btn-bayar").disabled = false;
+  } else {
+    alertEl.innerHTML = "";
+    document.getElementById("btn-bayar").disabled = true;
+  }
+}
+
+function processPayment() {
+  const v = tarif[selectedGol];
+  const pot = Math.round(v.harga * v.diskon);
+  const akhir = v.harga - pot;
+  const saldo = parseInt(document.getElementById("saldo-input").value);
+  const kembalian = saldo - akhir;
+  const ts = nowStr();
+  logTransaksi.push({ gol: selectedGol, tipe: v.tipe, harga: v.harga, potongan: pot, jumlah: akhir, saldo, kembalian, waktu: ts });
+
+  document.getElementById("struk-box").innerHTML = `
+    <div class="struk">
+      <div class="struk-header">
+        <div class="struk-logo">TOL.SYS</div>
+        <div class="struk-sub">${gateName.toUpperCase()} &nbsp;·&nbsp; ${ts}</div>
+      </div>
+      <hr class="struk-divider">
+      <div class="struk-row"><span class="k">Golongan</span><span>${v.tipe}</span></div>
+      <div class="struk-row"><span class="k">Harga normal</span><span style="text-decoration:line-through;color:var(--text3)">${fmt(v.harga)}</span></div>
+      <div class="struk-row"><span class="k">Diskon ${Math.round(v.diskon*100)}%</span><span style="color:var(--accent)">− ${fmt(pot)}</span></div>
+      <hr class="struk-divider">
+      <div class="struk-total"><span>Total bayar</span><span>${fmt(akhir)}</span></div>
+      <div class="struk-row"><span class="k">Uang dibayar</span><span>${fmt(saldo)}</span></div>
+      <div class="struk-row"><span class="k">Kembalian</span><span style="font-weight:500">${fmt(kembalian)}</span></div>
+      <hr class="struk-divider">
+      <div class="struk-footer">— TERIMA KASIH, HATI-HATI DI JALAN —</div>
+    </div>
+  `;
+  setNavActive(null);
+  showScreen("screen-struk");
+}
+
+function nextKendaraan() {
+  selectedGol = null;
+  document.getElementById("payment-panel").style.display = "none";
+  document.getElementById("btn-lanjut").disabled = true;
+  document.querySelectorAll(".gol-option").forEach(c => c.classList.remove("selected"));
+  nav("kendaraan");
+}
+
+function renderLaporan() {
+  const total = logTransaksi.reduce((a, b) => a + b.jumlah, 0);
+  const totalDiskon = logTransaksi.reduce((a, b) => a + b.potongan, 0);
+  document.getElementById("laporan-gate-name").textContent = gateName ? "Rekap sesi — " + gateName.toUpperCase() : "Rekap transaksi sesi ini.";
+  document.getElementById("stat-grid").innerHTML = `
+    <div class="stat">
+      <div class="stat-label">Total kendaraan</div>
+      <div class="stat-value accent">${logTransaksi.length}</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Total pendapatan</div>
+      <div class="stat-value">${logTransaksi.length ? fmt(total) : "—"}</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Total diskon diberikan</div>
+      <div class="stat-value">${logTransaksi.length ? fmt(totalDiskon) : "—"}</div>
+    </div>
+  `;
+  const logEl = document.getElementById("log-list");
+  if (logTransaksi.length === 0) {
+    logEl.innerHTML = `<div class="empty">Belum ada transaksi. Mulai proses kendaraan di menu Masuk Kendaraan.</div>`;
+    return;
+  }
+  logEl.innerHTML = [...logTransaksi].reverse().map((t, i) => `
+    <div class="log-item">
+      <div>
+        <div class="log-type">${t.tipe}</div>
+        <div class="log-meta">${t.waktu}</div>
+      </div>
+      <div class="log-amount">${fmt(t.jumlah)}</div>
+    </div>
+  `).join("");
+}
+</script>
+</body>
+</html>
